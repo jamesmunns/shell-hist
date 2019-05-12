@@ -1,6 +1,6 @@
 use std::{
     cmp::Ordering,
-    collections::{BinaryHeap, BTreeMap},
+    collections::{BTreeMap, BinaryHeap},
     fs::File,
     io::{self, prelude::*, BufReader},
     path::PathBuf,
@@ -10,7 +10,6 @@ use dirs::home_dir;
 use regex::Regex;
 
 use crate::opts::HistoryFlavor;
-
 
 /// CtNode are post-processed partial/full commands with an associated non-specific count
 #[derive(Eq, Debug)]
@@ -88,14 +87,11 @@ impl Node {
             let next_txt = format!("{}{} ", prefix, cmd);
             node.top_exclusive(ct, &next_txt)
                 .drain(..)
-                .for_each(|t| {
-                    topn.push(t)
-                });
+                .for_each(|t| topn.push(t));
             topn.push(CtNode {
                 count: node.count_exact,
                 full_text: next_txt.trim_end().to_owned(),
             });
-
         });
         while topn.len() > ct {
             topn.pop();
@@ -114,14 +110,11 @@ impl Node {
             let next_txt = format!("{}{} ", prefix, cmd);
             node.top_inclusive(ct, &next_txt)
                 .drain(..)
-                .for_each(|t| {
-                    topn.push(t)
-                });
+                .for_each(|t| topn.push(t));
             topn.push(CtNode {
                 count: node.count_inclusive,
                 full_text: next_txt.trim_end().to_owned(),
             });
-
         });
         while topn.len() > ct {
             topn.pop();
@@ -142,9 +135,7 @@ impl Node {
             let next_txt = format!("{}{} ", prefix, cmd);
             node.top_inclusive_filt(ct, &next_txt)
                 .drain(..)
-                .for_each(|t| {
-                    topn.push(t)
-                });
+                .for_each(|t| topn.push(t));
 
             if (node.count_exact != 0) && (((node.count_exact * 10) / node.count_inclusive) >= 1) {
                 topn.push(CtNode {
@@ -152,7 +143,6 @@ impl Node {
                     full_text: next_txt.trim_end().to_owned(),
                 });
             }
-
         });
         while topn.len() > ct {
             topn.pop();
@@ -164,45 +154,74 @@ impl Node {
     }
 }
 
-pub fn parse<'a>(path: Option<PathBuf>, flavor: HistoryFlavor) -> Node  {
+/// A common parser for history files with a rexex
+fn parse_file(history: String, re_str: &'static str, idx: usize) -> Node {
+    let re = Regex::new(re_str).unwrap();
     let mut tree = Node::new();
-    use crate::HistoryFlavor::*;
-    let (name, re, idx) = match flavor {
-        Zsh => {
-            (".zsh_history", Regex::new(r"^.*;(sudo )?(.*)$").unwrap(), 2)
-        },
-        Bash => {
-            (".bash_history", Regex::new(r"^(sudo )?(.*)$").unwrap(), 2)
-        }
-    };
 
-    let path = path.unwrap_or_else(|| {
-        let mut dir = home_dir().unwrap();
-        dir.push(name);
-        dir
-    });
-
-    let f = File::open(&path).unwrap();
-    let f = BufReader::new(f);
-
-    let _: io::Result<()> = f
-        .lines()
-        .filter_map(|line| line.ok())
-        .filter_map(|line| Some(
-            re
-                .captures(&line)?
-                .get(idx)?
-                .as_str()
-                .to_string()
-            )
-        )
+    let _: io::Result<()> = history
+        .split("\n")
+        .collect::<Vec<&str>>()
+        .into_iter()
+        .filter_map(|line| Some(re.captures(&line)?.get(idx)?.as_str().to_string()))
         .try_for_each(|lineout| {
-            let toks = lineout.split_whitespace().map(|t| t.to_string()).collect::<Vec<String>>();
+            let toks = lineout
+                .split_whitespace()
+                .map(|t| t.to_string())
+                .collect::<Vec<String>>();
+            println!("Line: {:?}", toks);
 
             tree.chomp(&toks);
             Ok(())
-        }
-    );
+        });
 
     tree
+}
+
+/// Wrapper function to abstract away history loading
+fn load_history(path: PathBuf, flavor: HistoryFlavor) -> String {
+    use crate::HistoryFlavor::*;
+    match flavor {
+        Zsh | Bash => {
+            let mut f = File::open(path).unwrap();
+            let mut history = String::new();
+            f.read_to_string(&mut history).unwrap();
+            history
+        }
+        // Fish is weird...
+        Fish => {
+            let history = std::process::Command::new("fish")
+                .args(&["-c", "history"])
+                .output()
+                .unwrap();
+            String::from_utf8(history.stdout).unwrap()
+        }
+    }
+}
+
+pub fn parse<'a>(path: Option<PathBuf>, flavor: HistoryFlavor) -> Node {
+    use crate::HistoryFlavor::*;
+
+    // Load history somehow
+    let history = load_history(
+        path.unwrap_or_else(|| {
+            let mut dir = home_dir().unwrap();
+            dir.push(match flavor {
+                Zsh => ".zsh_history",
+                Bash => ".bash_history",
+                Fish => "", // Can be ignored
+            });
+
+            dir
+        }),
+        flavor,
+    );
+
+    println!("{}", &history);
+
+    match flavor {
+        Zsh => parse_file(history, r"^.*;(sudo )?(.*)$", 2),
+        Bash => parse_file(history, r"^(sudo )?(.*)$", 2),
+        Fish => parse_file(history, r"(.*)", 0),
+    }
 }

@@ -43,20 +43,27 @@ pub struct ShellOpts {
     /// Parse Bash history
     #[structopt(long="flavor-bash")]
     pub bash: bool,
+
+    /// Parse Fish history
+    #[structopt(long="flavor-fish")]
+    pub fish: bool,
 }
 
+#[derive(Copy, Clone)]
 pub enum HistoryFlavor {
     Zsh,
     Bash,
+    Fish
 }
 
 impl ShellOpts {
     pub fn validate(self) -> HistoryFlavor {
-        match (self.zsh, self.bash) {
-            (false, false) => HistoryFlavor::Zsh,
-            (true, false) => HistoryFlavor::Zsh,
-            (false, true) => HistoryFlavor::Bash,
-            (true, true) => {
+        match (self.zsh, self.bash, self.fish) {
+            (false, false, false) => HistoryFlavor::Zsh,
+            (true, false, false) => HistoryFlavor::Zsh,
+            (false, true, false) => HistoryFlavor::Bash,
+            (false, false, true) => HistoryFlavor::Fish,
+            (_, _, _) => {
                 eprintln!("Multiple shell modes selected, please select one or none");
                 std::process::exit(-1);
             }
