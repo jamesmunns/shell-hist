@@ -2,7 +2,12 @@
 name = "shell-hist"
 version = "0.1.0"
 authors = ["James Munns <james.munns@ferrous-systems.com>"]
+license = "MIT OR Apache-2.0"
 edition = "2018"
+repository = "https://github.com/jamesmunns/shell-hist"
+documentation = "https://docs.rs/shell-hist"
+description = "A CLI tool for inspecting shell history"
+readme = "README.md"
 
 [dependencies]
 regex = "1.0"
