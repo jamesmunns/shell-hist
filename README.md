@@ -2,24 +2,9 @@
 
 Take a look at your most common shell commands, based on your history file
 
+![shell-hist Screenshot](./assets/screenshot.png)
+
 ```text
-james@laptop ➜ ~ shell-hist
-
-  Fuzzy Commands
-james@laptop ➜ ~ shell-hist
-|  HEAT    |  COUNT   |  COMMAND
-| -------- | -------- | ---------
-| ████████ |      540 | cargo run
-| ██████   |      405 | git add -i
-| ██████   |      404 | ls
-| █████▋   |      377 | cargo build
-| █████▎   |      355 | git commit
-| ████▍    |      294 | cargo run --release
-| ██▉      |      191 | git diff
-| ██▌      |      170 | ssh remote
-| ██▎      |      148 | cd ..
-| ██▏      |      142 | stt
-
 james@laptop ➜ ~ shell-hist --help
 
 shell-hist 0.1.0
