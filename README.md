@@ -7,7 +7,7 @@ Take a look at your most common shell commands, based on your history file
 ```text
 james@laptop ➜ ~ shell-hist --help
 
-shell-hist 0.1.0
+shell-hist 0.2.0
 James Munns <james.munns@ferrous-systems.com>
 A CLI tool for inspecting shell history
 
@@ -15,23 +15,29 @@ USAGE:
     shell-hist [FLAGS] [OPTIONS]
 
 FLAGS:
-        --flavor-bash      Parse Bash history
+        --flavor-bash      Manually select Bash history, overriding auto-detect
     -e, --display-exact    Show the most common exact commands
     -z, --display-fuzzy    Show fuzzy matched output. This is the default option.
     -h, --help             Prints help information
     -t, --display-heat     Show the most common command components
     -V, --version          Prints version information
-        --flavor-zsh       Parse Zsh history. This is the default option.
+        --flavor-zsh       Manually select ZSH history, overriding auto-detect
 
 OPTIONS:
     -n <count>        How many items to show [default: 10]
-    -f <file>         File to parse. Defaults to history file of selected shell flavor
+    -f <file>         File to parse. Defaults to history file of selected or detected shell flavor
 ```
 
 ## Installation
 
 ```
 cargo install shell-hist
+```
+
+## Upgrade
+
+```
+cargo install -f shell-hist
 ```
 
 ## License
