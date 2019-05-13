@@ -6,10 +6,8 @@ use std::{
     path::PathBuf,
 };
 
-use dirs::home_dir;
-use regex::Regex;
-
 use crate::opts::HistoryFlavor;
+use crate::eject;
 
 
 /// CtNode are post-processed partial/full commands with an associated non-specific count
@@ -75,6 +73,8 @@ impl Node {
         if !self.children.contains_key(&toks[0]) {
             self.children.insert(toks[0].clone(), Node::new());
         }
+
+        // We guarantee above the children contain this token
         let child = self.children.get_mut(&toks[0]).unwrap();
 
         child.chomp(&toks[1..]);
@@ -166,23 +166,15 @@ impl Node {
 
 pub fn parse<'a>(path: Option<PathBuf>, flavor: HistoryFlavor) -> Node  {
     let mut tree = Node::new();
-    use crate::HistoryFlavor::*;
-    let (name, re, idx) = match flavor {
-        Zsh => {
-            (".zsh_history", Regex::new(r"^.*;(sudo )?(.*)$").unwrap(), 2)
-        },
-        Bash => {
-            (".bash_history", Regex::new(r"^(sudo )?(.*)$").unwrap(), 2)
-        }
-    };
 
     let path = path.unwrap_or_else(|| {
-        let mut dir = home_dir().unwrap();
-        dir.push(name);
-        dir
+        flavor.history_path()
     });
+    let (re, idx) = flavor.regex_and_capture_idx();
 
-    let f = File::open(&path).unwrap();
+    let f = File::open(&path).unwrap_or_else(|_| {
+        eject(&format!("Unable to open specified or detected history file: {:?}", path));
+    });
     let f = BufReader::new(f);
 
     let _: io::Result<()> = f

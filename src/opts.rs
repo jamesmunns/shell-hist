@@ -1,6 +1,9 @@
 use std::env;
 use std::path::PathBuf;
 use structopt::StructOpt;
+use regex::Regex;
+use dirs::home_dir;
+use crate::eject;
 
 #[derive(StructOpt)]
 pub struct Options {
@@ -46,41 +49,82 @@ pub struct ShellOpts {
     pub bash: bool,
 }
 
+#[derive(Copy, Clone)]
 pub enum HistoryFlavor {
     Zsh,
     Bash,
 }
 
 impl ShellOpts {
-    pub fn validate(self) -> HistoryFlavor {
-        let shell_path = env::var("SHELL");
+    pub fn detect_shell() -> Option<HistoryFlavor> {
+        const SHELL_MATCHES: &[(&str, HistoryFlavor)] = &[
+            ("zsh", HistoryFlavor::Zsh),
+            ("bash", HistoryFlavor::Bash),
+        ];
 
+        let shell_path = env::var("SHELL").ok()?;
+
+        for (text, sh) in SHELL_MATCHES {
+            if shell_path.contains(text) {
+                return Some(*sh);
+            }
+        }
+
+        None
+    }
+
+    pub fn validate(self) -> HistoryFlavor {
         match (self.zsh, self.bash) {
             (false, false) => {
-                match shell_path {
-                    Ok(path) => {
-                        match &path[..] {
-                            "/bin/zsh" => HistoryFlavor::Zsh,
-                            "/bin/bash" => HistoryFlavor::Bash,
-                            &_ => {
-                                eprintln!("Do not know what shell you are using");
-                                std::process::exit(-1);
-                            }
-                        }
-                    }
-                    Err(_e) => {
-                        eprintln!("Could not read the SHELL env variable");
-                        std::process::exit(-1);
-                    }
+                if let Some(sh) = Self::detect_shell() {
+                    sh
+                } else {
+                    eject("Unable to detect shell");
                 }
             },
             (true, false) => HistoryFlavor::Zsh,
             (false, true) => HistoryFlavor::Bash,
             (true, true) => {
-                eprintln!("Multiple shell modes selected, please select one or none");
-                std::process::exit(-1);
+                eject("Multiple shell modes selected, please select one or none");
             }
         }
+    }
+}
+
+impl HistoryFlavor {
+    pub fn history_path(&self) -> PathBuf {
+        use HistoryFlavor::*;
+        let name = match self {
+            Zsh => {
+                ".zsh_history"
+            },
+            Bash => {
+                ".bash_history"
+            }
+        };
+
+        let mut dir = home_dir().unwrap_or_else(|| {
+            eject("Unable to determine home path. Please specify history file path");
+        });
+        dir.push(name);
+        dir
+    }
+
+    pub fn regex_and_capture_idx(&self) -> (Regex, usize) {
+        use HistoryFlavor::*;
+        let (re_res, idx) = match self {
+            Zsh => {
+                (Regex::new(r"^.*;(sudo )?(.*)$"), 2)
+            },
+            Bash => {
+                (Regex::new(r"^(sudo )?(.*)$"), 2)
+            }
+        };
+
+        (
+            re_res.unwrap_or_else(|_| eject("Failed to compile regex!")),
+            idx
+        )
     }
 }
 
@@ -98,8 +142,7 @@ impl DisplayOpts {
             (false, true, false) => DisplayMode::Exact,
             (false, false, true) => DisplayMode::Heat,
             _ => {
-                eprintln!("Multiple display modes selected, please select one or none");
-                std::process::exit(-1);
+                eject("Multiple display modes selected, please select one or none");
             }
         }
     }

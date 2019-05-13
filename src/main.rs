@@ -1,7 +1,7 @@
 use structopt::StructOpt;
 
 mod opts;
-use opts::{HistoryFlavor, DisplayMode};
+use opts::DisplayMode;
 
 mod parse;
 use parse::{Node, CtNode, Line, parse};
@@ -49,7 +49,12 @@ fn main() {
 }
 
 fn ct_node_to_list_line(mut in_dat: Vec<CtNode>) -> Vec<Line> {
-    let max = in_dat.first().unwrap().count as f64;
+    let max = if let Some(item) = in_dat.first() {
+        item.count as f64
+    } else {
+        return vec![];
+    };
+
     in_dat.drain(..).map(|line| {
         Line {
             pct: (line.count as f64) / max,
@@ -74,4 +79,9 @@ fn pct_to_bar(pct: f64, width: usize) -> String {
     }
 
     out
+}
+
+pub fn eject(reason: &str) -> ! {
+    eprintln!("{}", reason);
+    std::process::exit(-1);
 }
