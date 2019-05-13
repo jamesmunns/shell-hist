@@ -1,3 +1,4 @@
+use std::env;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -52,8 +53,27 @@ pub enum HistoryFlavor {
 
 impl ShellOpts {
     pub fn validate(self) -> HistoryFlavor {
+        let shell_path = env::var("SHELL");
+
         match (self.zsh, self.bash) {
-            (false, false) => HistoryFlavor::Zsh,
+            (false, false) => {
+                match shell_path {
+                    Ok(path) => {
+                        match &path[..] {
+                            "/bin/zsh" => HistoryFlavor::Zsh,
+                            "/bin/bash" => HistoryFlavor::Bash,
+                            &_ => {
+                                eprintln!("Do not know what shell you are using");
+                                std::process::exit(-1);
+                            }
+                        }
+                    }
+                    Err(_e) => {
+                        eprintln!("Could not read the SHELL env variable");
+                        std::process::exit(-1);
+                    }
+                }
+            },
             (true, false) => HistoryFlavor::Zsh,
             (false, true) => HistoryFlavor::Bash,
             (true, true) => {
