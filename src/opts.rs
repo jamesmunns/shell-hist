@@ -13,7 +13,7 @@ pub struct Options {
     #[structopt(flatten)]
     pub shell: ShellOpts,
 
-    /// File to parse. Defaults to history file of selected shell flavor
+    /// File to parse. Defaults to history file of selected or detected shell flavor
     #[structopt(short = "f", parse(from_os_str))]
     pub file: Option<PathBuf>,
 
@@ -40,11 +40,11 @@ pub struct DisplayOpts {
 
 #[derive(StructOpt)]
 pub struct ShellOpts {
-    /// Parse Zsh history. This is the default option.
+    /// Manually select ZSH history, overriding auto-detect
     #[structopt(long="flavor-zsh")]
     pub zsh: bool,
 
-    /// Parse Bash history
+    /// Manually select Bash history, overriding auto-detect
     #[structopt(long="flavor-bash")]
     pub bash: bool,
 }
@@ -79,7 +79,7 @@ impl ShellOpts {
                 if let Some(sh) = Self::detect_shell() {
                     sh
                 } else {
-                    eject("Unable to detect shell");
+                    eject("Unable to detect shell, please manually select a shell flavor");
                 }
             },
             (true, false) => HistoryFlavor::Zsh,
