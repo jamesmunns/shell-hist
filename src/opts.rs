@@ -1,9 +1,9 @@
+use crate::eject;
+use dirs::home_dir;
+use regex::Regex;
 use std::env;
 use std::path::PathBuf;
 use structopt::StructOpt;
-use regex::Regex;
-use dirs::home_dir;
-use crate::eject;
 
 #[derive(StructOpt)]
 pub struct Options {
@@ -22,30 +22,29 @@ pub struct Options {
     pub count: usize,
 }
 
-
 #[derive(StructOpt)]
 pub struct DisplayOpts {
     /// Show fuzzy matched output. This is the default option.
-    #[structopt(short="z", long="display-fuzzy")]
+    #[structopt(short = "z", long = "display-fuzzy")]
     pub fuzzy: bool,
 
     /// Show the most common exact commands
-    #[structopt(short="e", long="display-exact")]
+    #[structopt(short = "e", long = "display-exact")]
     pub exact: bool,
 
     /// Show the most common command components
-    #[structopt(short="t", long="display-heat")]
+    #[structopt(short = "t", long = "display-heat")]
     pub heat: bool,
 }
 
 #[derive(StructOpt)]
 pub struct ShellOpts {
     /// Manually select ZSH history, overriding auto-detect
-    #[structopt(long="flavor-zsh")]
+    #[structopt(long = "flavor-zsh")]
     pub zsh: bool,
 
     /// Manually select Bash history, overriding auto-detect
-    #[structopt(long="flavor-bash")]
+    #[structopt(long = "flavor-bash")]
     pub bash: bool,
 }
 
@@ -57,10 +56,8 @@ pub enum HistoryFlavor {
 
 impl ShellOpts {
     pub fn detect_shell() -> Option<HistoryFlavor> {
-        const SHELL_MATCHES: &[(&str, HistoryFlavor)] = &[
-            ("zsh", HistoryFlavor::Zsh),
-            ("bash", HistoryFlavor::Bash),
-        ];
+        const SHELL_MATCHES: &[(&str, HistoryFlavor)] =
+            &[("zsh", HistoryFlavor::Zsh), ("bash", HistoryFlavor::Bash)];
 
         let shell_path = env::var("SHELL").ok()?;
 
@@ -81,7 +78,7 @@ impl ShellOpts {
                 } else {
                     eject("Unable to detect shell, please manually select a shell flavor");
                 }
-            },
+            }
             (true, false) => HistoryFlavor::Zsh,
             (false, true) => HistoryFlavor::Bash,
             (true, true) => {
@@ -114,17 +111,13 @@ impl HistoryFlavor {
     pub fn regex_and_capture_idx(&self) -> (Regex, usize) {
         use HistoryFlavor::*;
         let (re_res, idx) = match self {
-            Zsh => {
-                (Regex::new(r"^.*;(sudo )?(.*)$"), 2)
-            },
-            Bash => {
-                (Regex::new(r"^(sudo )?(.*)$"), 2)
-            }
+            Zsh => (Regex::new(r"^.*;(sudo )?(.*)$"), 2),
+            Bash => (Regex::new(r"^(sudo )?(.*)$"), 2),
         };
 
         (
             re_res.unwrap_or_else(|_| eject("Failed to compile regex!")),
-            idx
+            idx,
         )
     }
 }
