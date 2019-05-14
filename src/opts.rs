@@ -94,20 +94,21 @@ impl ShellOpts {
 impl HistoryFlavor {
     pub fn history_path(&self) -> PathBuf {
         use HistoryFlavor::*;
-        let name = match self {
-            Zsh => {
-                ".zsh_history"
-            },
-            Bash => {
-                ".bash_history"
-            }
-        };
 
-        let mut dir = home_dir().unwrap_or_else(|| {
-            eject("Unable to determine home path. Please specify history file path");
-        });
-        dir.push(name);
-        dir
+        if let Ok(hist_file) = std::env::var("HISTFILE") {
+            PathBuf::from(hist_file)
+        } else {
+            let name = match self {
+                Zsh => ".zsh_history",
+                Bash => ".bash_history",
+            };
+
+            let mut dir = home_dir().unwrap_or_else(|| {
+                eject("Unable to determine home path. Please specify history file path");
+            });
+            dir.push(name);
+            dir
+        }
     }
 
     pub fn regex_and_capture_idx(&self) -> (Regex, usize) {
