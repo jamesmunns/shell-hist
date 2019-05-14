@@ -164,7 +164,7 @@ impl Node {
     }
 }
 
-pub fn parse<'a>(path: Option<PathBuf>, flavor: HistoryFlavor) -> Node  {
+pub fn parse(path: Option<PathBuf>, flavor: HistoryFlavor) -> Node  {
     let mut tree = Node::new();
 
     let path = path.unwrap_or_else(|| {

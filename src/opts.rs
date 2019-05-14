@@ -137,8 +137,7 @@ pub enum DisplayMode {
 impl DisplayOpts {
     pub fn validate(self) -> DisplayMode {
         match (self.fuzzy, self.exact, self.heat) {
-            (false, false, false) => DisplayMode::Fuzzy,
-            (true, false, false) => DisplayMode::Fuzzy,
+            (_, false, false) => DisplayMode::Fuzzy,
             (false, true, false) => DisplayMode::Exact,
             (false, false, true) => DisplayMode::Heat,
             _ => {
