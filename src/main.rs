@@ -35,16 +35,16 @@ fn main() {
 
     let lines = ct_node_to_list_line(func(&t, opt.count, ""));
 
-    println!("");
+    println!();
     println!("  {} Commands ", title);
-    println!("");
+    println!();
     println!("|  HEAT    |  COUNT   |  COMMAND ");
     println!("| -------- | -------- | ---------");
 
-    for i in lines.iter() {
+    for i in &lines {
         println!("| {} | {:8} | {}", pct_to_bar(i.pct, BARS_WIDE), i.node.count, i.node.full_text);
     }
-    println!("");
+    println!();
 
 }
 
